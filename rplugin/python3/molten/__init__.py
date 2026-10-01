@@ -760,14 +760,6 @@ class Molten:
     @pynvim.command("MoltenExportOutput", nargs="*", sync=True, bang=True)  # type: ignore
     @nvimui  # type: ignore
     def command_export(self, args, bang: bool) -> None:
-        self._export_output(args, bang, "MoltenExportOutput", False)
-
-    @pynvim.command("MoltenExportCellOutput", nargs="*", sync=True, bang=True)  # type: ignore
-    @nvimui  # type: ignore
-    def command_export_cell(self, args, bang: bool) -> None:
-        self._export_output(args, bang, "MoltenExportCellOutput", True)
-
-    def _export_output(self, args, bang: bool, command: str, only_cell: bool) -> None:
         kernels = self._get_current_buf_kernels(True)
         assert kernels is not None
 
@@ -781,17 +773,12 @@ class Molten:
             kernel = args[1]
         else:
             path = path.replace("%k", r"\%k")
-            self.kernel_check(f"{command}{'!' if bang else ''} {path} %k", buf)
+            self.kernel_check(f"MoltenExportOutput{'!' if bang else ''} {path} %k", buf)
             return
 
         for molten in kernels:
             if molten.kernel_id == kernel:
-                only = None
-                if only_cell:
-                    only = molten._get_selected_span()
-                    if only is None:
-                        raise MoltenException("No cell with output under the cursor")
-                export_outputs(self.nvim, molten, path, bang, only)
+                export_outputs(self.nvim, molten, path, bang)
                 break
 
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore

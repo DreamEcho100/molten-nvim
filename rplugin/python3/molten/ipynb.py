@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict
 from pynvim.api import Buffer, Nvim
 from molten.code_cell import CodeCell
 from molten.moltenbuffer import MoltenKernel
@@ -141,15 +141,8 @@ def handle_output_types(nvim: Nvim, output_type: str, kernel: MoltenKernel, outp
             )
     return chunk, success
 
-def export_outputs(
-    nvim: Nvim,
-    kernel: MoltenKernel,
-    filepath: str,
-    overwrite: bool,
-    only: Optional[CodeCell] = None,
-):
-    """Export outputs of the current file/kernel to a .ipynb file with the given name.
-    With `only`, cells are matched as usual but just that cell's outputs are written."""
+def export_outputs(nvim: Nvim, kernel: MoltenKernel, filepath: str, overwrite: bool):
+    """Export outputs of the current file/kernel to a .ipynb file with the given name."""
     import nbformat
 
     if not filepath.endswith(".ipynb"):
@@ -170,10 +163,8 @@ def export_outputs(
     nb_cells = list(filter(lambda x: x["cell_type"] == "code", nb["cells"]))
     nb_index = 0
     lang = kernel.runtime.kernel_manager.kernel_spec.language  # type: ignore
-    exported = 0
     for mcell in molten_cells:
         matched = False
-        start_index = nb_index
         while nb_index < len(nb_cells):
             code_cell, output = mcell
             nb_cell = nb_cells[nb_index]
@@ -181,9 +172,6 @@ def export_outputs(
 
             if compare_contents(nvim, nb_cell, code_cell, lang):
                 matched = True
-                if only is not None and code_cell != only:
-                    break
-                exported += 1
                 outputs = [
                     nbformat.v4.new_output(
                         chunk.output_type,
@@ -203,9 +191,6 @@ def export_outputs(
                 nb_cell["execution_count"] = output.output.execution_count
                 break  # break out of the while loop
 
-        if not matched and only is not None and mcell[0] != only:
-            nb_index = start_index  # an unrelated cell with no match must not use up the rest
-            continue
         if not matched:
             notify_error(
                 nvim,
@@ -219,7 +204,7 @@ def export_outputs(
         head, tail = os.path.split(filepath)
         write_to = f"{head}/copy-of-{tail}"
 
-    notify_info(nvim, f"Exporting {exported} cell output(s) to {write_to}")
+    notify_info(nvim, f"Exporting {len(molten_cells)} cell output(s) to {write_to}")
     nbformat.write(nb, write_to)
 
 
