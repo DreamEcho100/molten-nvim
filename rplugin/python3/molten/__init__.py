@@ -13,8 +13,6 @@ from molten.save_load import MoltenIOError, get_default_save_file, load, save
 from molten.moltenbuffer import MoltenKernel
 from molten.options import MoltenOptions
 from molten.outputbuffer import OutputBuffer
-from molten.outputchunks import OutputStatus
-from molten.outputimage import export_image
 from molten.position import DynamicPosition, Position
 from molten.runtime import get_available_kernels
 from molten.utils import MoltenException, notify_error, notify_info, notify_warn, nvimui
@@ -782,44 +780,6 @@ class Molten:
             if molten.kernel_id == kernel:
                 export_outputs(self.nvim, molten, path, bang)
                 break
-
-    @pynvim.command("MoltenExportImage", nargs="*", sync=True)  # type: ignore
-    @nvimui  # type: ignore
-    def command_export_image(self, args) -> None:
-        """MoltenExportImage {cell|all} {path.png} {bg} {fg} [font file]: draw the output of the
-        cell under the cursor, or of every cell in this buffer, onto one PNG"""
-        if len(args) < 4 or args[0] not in ("cell", "all"):
-            raise MoltenException("Usage: MoltenExportImage {cell|all} {path.png} {bg} {fg} [font]")
-        mode, path, bg, fg = args[:4]
-        font = args[4] if len(args) > 4 and args[4] != "-" else None
-
-        kernels = self._get_current_buf_kernels(True)
-        assert kernels is not None
-        bufnr = self.nvim.current.buffer.number
-
-        found = []
-        for kernel in kernels:
-            if mode == "cell":
-                span = kernel._get_selected_span()
-                if span is not None:
-                    found.append((span, kernel.outputs[span]))
-            else:
-                found.extend((span, out) for span, out in kernel.outputs.items() if span.bufno == bufnr)
-        found = [
-            (span, out)
-            for span, out in found
-            if out.output.status == OutputStatus.DONE and out.output.chunks
-        ]
-        if not found:
-            raise MoltenException(
-                "No finished cell output under the cursor"
-                if mode == "cell"
-                else "No finished cell output in this buffer"
-            )
-        found.sort(key=lambda item: item[0].begin.lineno)
-
-        export_image([out.output for _, out in found], path, bg, fg, font)
-        notify_info(self.nvim, f"Saved {len(found)} cell output(s) as an image: {path}")
 
     @pynvim.command("MoltenSave", nargs="*", sync=True)  # type: ignore
     @nvimui  # type: ignore
