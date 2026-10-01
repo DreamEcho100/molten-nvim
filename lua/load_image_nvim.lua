@@ -64,7 +64,8 @@ image_api.from_file = function(path, opts)
     images[id].max_width_window_percentage = opts.max_width_window_percentage
     images[id].max_height_window_percentage = opts.max_height_window_percentage
   end
-  if images[id] and opts.with_virtual_padding == false and opts.buffer then
+  -- (a floating output window has no `window` yet and rebuilds its text on every open)
+  if images[id] and opts.with_virtual_padding == false and opts.buffer and opts.window then
     anchors[id] = {
       buf = opts.buffer,
       mark = vim.api.nvim_buf_set_extmark(opts.buffer, anchor_ns, opts.y, 0, {}),
