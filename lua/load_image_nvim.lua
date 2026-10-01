@@ -32,7 +32,8 @@ local function sync_anchors(buf)
       untrack(id)
     elseif anchor.buf == buf then
       local row = vim.api.nvim_buf_get_extmark_by_id(buf, anchor_ns, anchor.mark, {})[1]
-      if row and row ~= img.geometry.y then
+      -- an anchor past the last line (text below it was deleted) has nowhere to draw
+      if row and row ~= img.geometry.y and row < vim.api.nvim_buf_line_count(buf) then
         img.geometry.y = row
         -- a hidden image keeps the new row and is drawn there when it comes back
         if img.is_rendered then
