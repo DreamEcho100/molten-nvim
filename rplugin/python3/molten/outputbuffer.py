@@ -152,8 +152,8 @@ class OutputBuffer:
             self.display_win = None
             redraw = False
             for chunk in self.output.chunks:
-                if isinstance(chunk, ImageOutputChunk) and chunk.img_identifier is not None:
-                    self.canvas.remove_image(chunk.img_identifier)
+                if isinstance(chunk, ImageOutputChunk) and chunk.float_img_identifier is not None:
+                    self.canvas.remove_image(chunk.float_img_identifier)
                     redraw = True
             if redraw:
                 self.canvas.present()
@@ -174,11 +174,20 @@ class OutputBuffer:
         # clear any inline images, etc.
         redraw = False
         for chunk in self.output.chunks:
-            if isinstance(chunk, ImageOutputChunk) and chunk.img_identifier is not None:
-                self.canvas.remove_image(chunk.img_identifier)
+            if isinstance(chunk, ImageOutputChunk) and chunk.virt_img_identifier is not None:
+                self.canvas.remove_image(chunk.virt_img_identifier)
                 redraw = True
         if redraw:
             self.canvas.present()
+
+    def destroy_images(self) -> None:
+        """Drop this output's images for good; call when the output itself is deleted."""
+        for chunk in self.output.chunks:
+            if isinstance(chunk, ImageOutputChunk):
+                for identifier in (chunk.virt_img_identifier, chunk.float_img_identifier):
+                    if identifier is not None:
+                        self.canvas.destroy_image(identifier)
+        self.canvas.present()
 
     def toggle_virtual_output(self, anchor: Position) -> None:
         if self.virt_hidden:

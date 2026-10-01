@@ -147,6 +147,10 @@ class ImageOutputChunk(OutputChunk):
         self.img_path = img_path
         self.output_type = "display_data"
         self.img_identifier = None
+        # an output can have both an inline and a floating image; clearing one
+        # must not touch the other
+        self.virt_img_identifier = None
+        self.float_img_identifier = None
 
     def place(
         self,
@@ -171,6 +175,10 @@ class ImageOutputChunk(OutputChunk):
             bufnr,
             winnr,
         )
+        if virtual:
+            self.virt_img_identifier = self.img_identifier
+        else:
+            self.float_img_identifier = self.img_identifier
         # images are rendered into virtual lines following the current line,
         # which also needs to exist as the extmark is placed there
         return " \n", canvas.img_size(self.img_identifier)["height"]
