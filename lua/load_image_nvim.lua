@@ -11,13 +11,59 @@ local utils = require("image.utils")
 local image_api = {}
 local images = {}
 
+-- Inline images whose rows Molten reserves itself (with_virtual_padding = false) get their
+-- own anchor extmark, so they follow edits. image.nvim tracks movement with one extmark per
+-- (row, col), and all of an output's images share the same row, so only one of them would.
+local anchor_ns = vim.api.nvim_create_namespace("molten-image-anchors")
+local anchors = {}
+
+local function untrack(id)
+  local anchor = anchors[id]
+  if anchor then
+    pcall(vim.api.nvim_buf_del_extmark, anchor.buf, anchor_ns, anchor.mark)
+    anchors[id] = nil
+  end
+end
+
+local function sync_anchors(buf)
+  for id, anchor in pairs(anchors) do
+    local img = images[id]
+    if not img or not vim.api.nvim_buf_is_valid(anchor.buf) then
+      untrack(id)
+    elseif anchor.buf == buf then
+      local row = vim.api.nvim_buf_get_extmark_by_id(buf, anchor_ns, anchor.mark, {})[1]
+      if row and row ~= img.geometry.y then
+        img.geometry.y = row
+        -- a hidden image keeps the new row and is drawn there when it comes back
+        if img.is_rendered then
+          img:render()
+        end
+      end
+    end
+  end
+end
+
+vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertLeave" }, {
+  group = vim.api.nvim_create_augroup("molten-image-anchors", { clear = true }),
+  callback = function(ev)
+    sync_anchors(ev.buf)
+  end,
+})
+
 image_api.from_file = function(path, opts)
   if opts.window and opts.window == vim.NIL then
     opts.window = nil
   end
   -- keyed by id, not path: an output's inline and floating images share a path
   local id = opts.id or path
+  untrack(id)
   images[id] = image.from_file(path, opts or {})
+  if images[id] and opts.with_virtual_padding == false and opts.buffer then
+    anchors[id] = {
+      buf = opts.buffer,
+      mark = vim.api.nvim_buf_set_extmark(opts.buffer, anchor_ns, opts.y, 0, {}),
+    }
+  end
   return id
 end
 
@@ -59,6 +105,7 @@ image_api.destroy = function(identifier)
   if not img then
     return
   end
+  untrack(identifier)
   img:clear()
   img.window = nil
   img.buffer = nil

@@ -183,7 +183,7 @@ class ImageNvimCanvas(Canvas):
                 "id": identifier,
                 "buffer": bufnr,
                 "with_virtual_padding": with_virtual_padding,
-                "inline": True,
+                "inline": with_virtual_padding,
                 "render_offset_top": render_offset_top,
                 "x": x,
                 "y": y,
