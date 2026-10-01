@@ -170,9 +170,11 @@ class ImageOutputChunk(OutputChunk):
         if not (loc == "both" or (loc == "virt" and virtual) or (loc == "float" and not virtual)):
             return "", 0
 
-        # image.nvim's own padding extmark gets dropped on redraw, so reserve the
-        # inline image's rows in the output and draw it `lines_above` rows down
-        reserve_rows = virtual and canvas.reserve_inline_rows
+        # image.nvim's own padding extmark gets dropped on redraw (inline) or is
+        # ignored when placing (floating window), so reserve the image's rows in
+        # the output text. Inline, the image is drawn `lines_above` rows down; in
+        # the float `lineno` already counts the reserved rows.
+        reserve_rows = canvas.reserve_inline_rows
         self.img_identifier = canvas.add_image(
             self.img_path,
             f"{'virt-' if virtual else ''}{self.img_path}",
@@ -180,7 +182,7 @@ class ImageOutputChunk(OutputChunk):
             lineno,
             bufnr,
             winnr,
-            **({"render_offset_top": lines_above, "with_virtual_padding": False} if reserve_rows else {}),
+            **({"render_offset_top": lines_above if virtual else 0, "with_virtual_padding": False} if reserve_rows else {}),
         )
         if virtual:
             self.virt_img_identifier = self.img_identifier
