@@ -15,13 +15,18 @@ image_api.from_file = function(path, opts)
   if opts.window and opts.window == vim.NIL then
     opts.window = nil
   end
-  images[path] = image.from_file(path, opts or {})
-  return path
+  -- keyed by id, not path: an output's inline and floating images share a path
+  local id = opts.id or path
+  images[id] = image.from_file(path, opts or {})
+  return id
 end
 
 image_api.render = function(identifier, geometry)
   geometry = geometry or {}
   local img = images[identifier]
+  if not img then
+    return
+  end
 
   -- a way to render images in windows when only their buffer is set
   if img.buffer and not img.window then
@@ -42,7 +47,22 @@ image_api.render = function(identifier, geometry)
 end
 
 image_api.clear = function(identifier)
-  images[identifier]:clear()
+  if images[identifier] then
+    images[identifier]:clear()
+  end
+end
+
+---hide an image for good. image.nvim keeps every image it has made and re-renders the ones
+---tied to a window, so also untie it, or a cleared image can come back
+image_api.destroy = function(identifier)
+  local img = images[identifier]
+  if not img then
+    return
+  end
+  img:clear()
+  img.window = nil
+  img.buffer = nil
+  images[identifier] = nil
 end
 
 image_api.clear_all = function()
@@ -59,6 +79,9 @@ end
 ---width/height settings. Does not consider max width/height percent values.
 image_api.image_size = function(identifier)
   local img = images[identifier]
+  if not img then
+    return { width = 0, height = 0 }
+  end
   local term_size = require("image.utils.term").get_size()
   local gopts = img.global_state.options
   local true_size = {

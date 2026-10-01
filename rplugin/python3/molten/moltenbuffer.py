@@ -333,6 +333,7 @@ class MoltenKernel:
             return False
         self.outputs[cell].clear_float_win()
         self.outputs[cell].clear_virt_output(cell.bufno)
+        self.outputs[cell].destroy_images()
         cell.clear_interface(self.highlight_namespace)
         del self.outputs[cell]
         if self.current_output == cell:

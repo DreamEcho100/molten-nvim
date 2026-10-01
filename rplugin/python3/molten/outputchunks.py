@@ -149,6 +149,10 @@ class ImageOutputChunk(OutputChunk):
         self.img_path = img_path
         self.output_type = "display_data"
         self.img_identifier = None
+        # an output can have both an inline and a floating image; clearing one
+        # must not touch the other
+        self.virt_img_identifier = None
+        self.float_img_identifier = None
 
     def place(
         self,
@@ -178,6 +182,10 @@ class ImageOutputChunk(OutputChunk):
             winnr,
             **({"render_offset_top": lines_above, "with_virtual_padding": False} if reserve_rows else {}),
         )
+        if virtual:
+            self.virt_img_identifier = self.img_identifier
+        else:
+            self.float_img_identifier = self.img_identifier
         if reserve_rows:
             return " \n" * max(canvas.img_size(self.img_identifier)["height"], 1), 0
         # images are rendered into virtual lines following the current line,

@@ -74,6 +74,12 @@ class Canvas(ABC):
         str the identifier for the image
         """
 
+    def destroy_image(self, identifier: str) -> None:
+        """
+        Remove an image for good (its output was deleted). Defaults to hiding it.
+        """
+        self.remove_image(identifier)
+
     @abstractmethod
     def remove_image(self, identifier: str) -> None:
         """
@@ -189,6 +195,12 @@ class ImageNvimCanvas(Canvas):
 
     def remove_image(self, identifier: str) -> None:
         self.to_make_invisible.add(identifier)
+
+    def destroy_image(self, identifier: str) -> None:
+        self.to_make_visible.discard(identifier)
+        self.to_make_invisible.discard(identifier)
+        self.visible.discard(identifier)
+        self.image_api.destroy(identifier)
 
 
 class WeztermCanvas(Canvas):
