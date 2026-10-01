@@ -58,6 +58,12 @@ image_api.from_file = function(path, opts)
   local id = opts.id or path
   untrack(id)
   images[id] = image.from_file(path, opts or {})
+  -- image.nvim copies these from an earlier image of the same file, so the popup's copy
+  -- would keep the inline image's cap
+  if images[id] then
+    images[id].max_width_window_percentage = opts.max_width_window_percentage
+    images[id].max_height_window_percentage = opts.max_height_window_percentage
+  end
   if images[id] and opts.with_virtual_padding == false and opts.buffer then
     anchors[id] = {
       buf = opts.buffer,

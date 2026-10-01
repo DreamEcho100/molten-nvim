@@ -176,10 +176,16 @@ class ImageNvimCanvas(Canvas):
         winnr: int | None = None,
         render_offset_top: int = 0,
         with_virtual_padding: bool = True,
+        full_window_size: bool = False,
     ) -> str:
         img = self.image_api.from_file(
             path,
             {
+                **(
+                    {"max_width_window_percentage": 100, "max_height_window_percentage": 100}
+                    if full_window_size
+                    else {}
+                ),
                 "id": identifier,
                 "buffer": bufnr,
                 "with_virtual_padding": with_virtual_padding,

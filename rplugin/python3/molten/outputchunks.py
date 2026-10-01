@@ -182,7 +182,17 @@ class ImageOutputChunk(OutputChunk):
             lineno,
             bufnr,
             winnr,
-            **({"render_offset_top": lines_above if virtual else 0, "with_virtual_padding": False} if reserve_rows else {}),
+            **(
+                {
+                    "render_offset_top": lines_above if virtual else 0,
+                    "with_virtual_padding": False,
+                    # the float is sized to its content, so image.nvim's default cap of
+                    # a share of the window height would shrink the images in it
+                    "full_window_size": not virtual,
+                }
+                if reserve_rows
+                else {}
+            ),
         )
         if virtual:
             self.virt_img_identifier = self.img_identifier
